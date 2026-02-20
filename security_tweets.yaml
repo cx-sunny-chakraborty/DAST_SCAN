@@ -1,59 +1,93 @@
-name: CxONE Dast Scan Security Tweets
-on:
-  #pull_request:
-  # branches:
-  # - main
-  #push: 
-  # branches:
-  # - main
-    
-  workflow_dispatch: #adds a 'run now' button
-  
-permissions:
-  contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
+---
+env:
+  contexts:
+    - name: "Default Context"
+      urls:
+        - "http://testhtml5.vulnweb.com/"
+      includePaths:
+        - "http://testhtml5.vulnweb.com/.*"
+      excludePaths: []
+      authentication:
+        method: "form"
+        parameters:
+          loginPageUrl: "http://testhtml5.vulnweb.com/#/popular"
+          loginRequestUrl: "http://testhtml5.vulnweb.com/login"
+          loginRequestBody: "username={%username%}&password={%password%}"
+        verification:
+          method: "response"
+          loggedInRegex: "Logout"
+          loggedOutRegex: "Login"
+          pollFrequency: 60
+          pollUnits: "requests"
+          pollUrl: ""
+          pollPostData: ""
+      sessionManagement:
+        method: "cookie"
+        parameters: {}
+      technology:
+        exclude: []
+      users:
+        - name: "test_user"
+          credentials:
+            password: "admin"
+            username: "admin"
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+  vars: {}
 jobs:
-  build:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif
-     # The type of runner that the job will run on 
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Create Output folder
-        run: mkdir ${{ github.workspace }}/output_fold
-      - name: Change dir owner
-        run: sudo chown -R 1000:1000 ${{ github.workspace }}
-      - name: Checkmarx DAST Github Action
-        uses: Checkmarx/dast-github-action@v1.0.6
-        env:
-          # prod
-          CX_APIKEY: ${{ secrets.CX_APIKEY }}
-          # canary: 
-          # CX_APIKEY: ${{ secrets.CANARY_API_KEY }}
-        with:
-            command: web
-            config: './security_tweets.yaml'
-            log_level: info
-            #prod
-            base_url: "https://ind.ast.checkmarx.net"
-            environment_id: ""
-            fail_on: ""
-            verbose: true
-            output: ${{ github.workspace }}/output_fold
-      - name: Reclaim output directory
-        if: always()
-        run: sudo chown -R 1001:1001 ${{ github.workspace }}/output_fold
-      - uses: actions/upload-artifact@v3
-        if: always()
-        name: Upload Logs
-        with:
-          name: report
-          path: ${{ github.workspace }}/output_fold
+  - parameters:
+      scanOnlyInScope: true
+      enableTags: false
+    rules: []
+    name: "passiveScan-config"
+    type: "passiveScan-config"
+  - parameters:
+      context: "Default Context"
+      user: "test_user"
+      url: ""
+      maxDuration: 0
+      maxDepth: 0
+      maxChildren: 0
+    name: "spider"
+    type: "spider"
+  - parameters:
+      context: "Default Context"
+      user: "test_user"
+      url: ""
+      maxDuration: 60
+      maxCrawlDepth: 10
+      numberOfBrowsers: 1
+      runOnlyIfModern: false
+    name: "spiderAjax"
+    type: "spiderAjax"
+  - parameters: {}
+    name: "passiveScan-wait"
+    type: "passiveScan-wait"
+  - parameters:
+      context: "Default Context"
+      user: "test_user"
+      policy: ""
+      maxRuleDurationInMins: 0
+      maxScanDurationInMins: 0
+    policyDefinition:
+      defaultStrength: "medium"
+      defaultThreshold: "medium"
+      rules: []
+    name: "activeScan"
+    type: "activeScan"
+  #- parameters:
+  #    template: "risk-confidence-html"
+  #    reportDir: ""
+  #    reportTitle: "ZAP Scanning Report"
+  #    reportDescription: ""
+  #  name: "report"
+  #  type: "report"
+  - parameters:
+      template: "traditional-pdf"
+      reportDir: ""
+      reportTitle: "ZAP Scanning Report"
+      reportDescription: ""
+    name: "report-pdf"
+    type: "report"
