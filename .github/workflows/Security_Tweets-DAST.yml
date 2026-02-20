@@ -1,44 +1,59 @@
-name: DAST 
-
+name: CxONE Dast Scan Security Tweets
 on:
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+  #pull_request:
+  # branches:
+  # - main
+  #push: 
+  # branches:
+  # - main
+    
+  workflow_dispatch: #adds a 'run now' button
+  
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  dast:
+  build:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif
+     # The type of runner that the job will run on 
     runs-on: ubuntu-latest
-    name: DAST on Prem Testing Action
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Create Output folder
-        run: mkdir ${{ runner.temp }}/output
+        run: mkdir ${{ github.workspace }}/output_fold
       - name: Change dir owner
-        run: sudo chown -R 1000:1000 ${{ runner.temp }}/output
-      - name: Run DAST-CLI command
+        run: sudo chown -R 1000:1000 ${{ github.workspace }}
+      - name: Checkmarx DAST Github Action
+        uses: checkmarx/dast@latest
         env:
+          # prod
           CX_APIKEY: ${{ secrets.CX_APIKEY }}
-        run: |
-           docker run --pull=always \
-           -v ${{ runner.temp }}/output:/tmp \
-           -e CX_APIKEY="$CX_APIKEY" \
-           checkmarx/dast:latest \
-           scan \
-           --command=web \
-           --config="./security_tweets.yaml" \
-           --log-level=info \
-           --environment-id=e2f832dc-7ff0-4316-8114-62e794ae7d36 \
-           --base-url=https://ind.ast.checkmarx.net \
-           --output=/tmp
-           
-      - name: Set permission on output folder
-        run: |
-         sudo chown -R 1001:1001 ${{ runner.temp }}/output
-      - name: Upload ZAP output
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        if: always()
+          # canary: 
+          # CX_APIKEY: ${{ secrets.CANARY_API_KEY }}
         with:
-          name: zap-output
-          path: ${{ runner.temp }}/output
+            command: web
+            config: './security_tweets.yaml'
+            log_level: info
+            #prod
+            base_url: "https://ind.ast.checkmarx.net"
+            environment_id: "e2f832dc-7ff0-4316-8114-62e794ae7d36"
+            fail_on: ""
+            verbose: true
+            output: ${{ github.workspace }}/output_fold
+      - name: Reclaim output directory
+        if: always()
+        run: sudo chown -R 1001:1001 ${{ github.workspace }}/output_fold
+      - uses: actions/upload-artifact@v4
+        if: always()
+        name: Upload Logs
+        with:
+          name: report
+          path: ${{ github.workspace }}/output_fold
