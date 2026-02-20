@@ -27,7 +27,7 @@ jobs:
            checkmarx/dast:latest \
            web \
            scan \
-           --configFull='./security_tweets.yaml' \
+           --config=./security_tweets.yaml \
            --environment-id=e2f832dc-7ff0-4316-8114-62e794ae7d36 \
            --base-url=https://ind.ast.checkmarx.net \
            --output=/tmp
