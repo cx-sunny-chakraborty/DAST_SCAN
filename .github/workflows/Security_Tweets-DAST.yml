@@ -23,6 +23,7 @@ jobs:
           CX_APIKEY: ${{ secrets.CX_APIKEY }}
         run: |
            docker run --pull=always \
+           -v ${{ github.workspace }}:/home/scanner/workspace \
            -v ${{ runner.temp }}/output:/tmp \
            -e CX_APIKEY="$CX_APIKEY" \
            checkmarx/dast:latest \
