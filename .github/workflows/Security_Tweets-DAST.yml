@@ -12,7 +12,7 @@ jobs:
     name: DAST
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@v4
       - name: Create Output folder
         run: mkdir ${{ github.workspace }}/output_fold
       - name: Change dir owner
@@ -35,7 +35,7 @@ jobs:
       - name: Reclaim output directory
         if: always()
         run: sudo chown -R 1001:1001 ${{ github.workspace }}/output_fold
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         name: Upload Logs
         with:
