@@ -26,6 +26,9 @@ jobs:
            -e CX_APIKEY="$CX_APIKEY" \
            checkmarx/dast:latest \
            scan \
+           --command=web \
+           --config="./security_tweets.yaml" \
+           --log-level=info \
            --environment-id=e2f832dc-7ff0-4316-8114-62e794ae7d36 \
            --base-url=https://ind.ast.checkmarx.net \
            --output=/tmp
