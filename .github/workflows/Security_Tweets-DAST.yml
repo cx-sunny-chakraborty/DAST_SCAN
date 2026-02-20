@@ -23,12 +23,11 @@ jobs:
           CX_APIKEY: ${{ secrets.CX_APIKEY }}
         run: |
            docker run --pull=always \
-           -v ${{ github.workspace }}:/home/scanner/workspace \
            -v ${{ runner.temp }}/output:/tmp \
            -e CX_APIKEY="$CX_APIKEY" \
            checkmarx/dast:latest \
            scan \
-           --config="./security_tweets.yaml" \
+           --config="https://github.com/cx-sunny-chakraborty/DAST_SCAN/blob/94d91993bce3403abc697b47d186e9585db00a29/security_tweets.yaml" \
            --environment-id=e2f832dc-7ff0-4316-8114-62e794ae7d36 \
            --base-url=https://ind.ast.checkmarx.net \
            --output=/tmp
