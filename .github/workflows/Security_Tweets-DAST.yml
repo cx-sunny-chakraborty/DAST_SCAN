@@ -1,3 +1,4 @@
+
 name: DAST 
 
 on:
@@ -9,14 +10,14 @@ on:
 jobs:
   dast:
     runs-on: ubuntu-latest
-    name: DAST
+    name: DAST on Prem Testing Action
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Create Output folder
-        run: mkdir ${{ github.workspace }}/output_fold
+        run: mkdir ${{ runner.temp }}/output
       - name: Change dir owner
-        run: sudo chown -R 1000:1000 ${{ github.workspace }}
+        run: sudo chown -R 1000:1000 ${{ runner.temp }}/output
       - name: Run DAST-CLI command
         env:
           CX_APIKEY: ${{ secrets.CX_APIKEY }}
@@ -25,19 +26,21 @@ jobs:
            -v ${{ runner.temp }}/output:/tmp \
            -e CX_APIKEY="$CX_APIKEY" \
            checkmarx/dast:latest \
-           web \
            scan \
            --config="./security_tweets.yaml" \
            --environment-id=e2f832dc-7ff0-4316-8114-62e794ae7d36 \
            --base-url=https://ind.ast.checkmarx.net \
            --output=/tmp
            
-      - name: Reclaim output directory
+      - name: Set permission on output folder
         if: always()
-        run: sudo chown -R 1001:1001 ${{ github.workspace }}/output_fold
-      - uses: actions/upload-artifact@v4
+        run: |
+         sudo chown -R 1001:1001 ${{ runner.temp }}/output
+      - name: Upload ZAP output
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         if: always()
-        name: Upload Logs
         with:
-          name: report
-          path: ${{ github.workspace }}/output_fold
+          name: zap-output
+          path: ${{ runner.temp }}/output
+       
+        
